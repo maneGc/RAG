@@ -18,7 +18,6 @@ Los documentos de ejemplo son reglamentos de una escuela **ficticia** (Instituto
 
 - [docs/INVESTIGACION.md](docs/INVESTIGACION.md): las seis técnicas para ampliar el conocimiento de un modelo, la tabla comparativa y las conclusiones.
 - [docs/ARQUITECTURA.md](docs/ARQUITECTURA.md): arquitectura y flujo del RAG, chunking, embeddings, búsqueda semántica y resultados de las pruebas.
-- [docs/EXPOSICION.md](docs/EXPOSICION.md): guion de la exposición y de la demostración en vivo.
 - [public/presentacion.html](public/presentacion.html): presentación con la demo integrada (se abre con la app encendida en `http://localhost:3000/presentacion.html`).
 
 ## Requisitos
