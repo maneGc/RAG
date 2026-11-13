@@ -1,0 +1,268 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RAG · Pregunta a tus documentos</title>
+<style>
+  :root {
+    --bg: #f6f5f1; --panel: #ffffff; --ink: #1d1d1b; --muted: #6b6a64; --line: #e3e1d9;
+    --accent: #2f5d50; --accent-soft: #e3eee9; --warn: #9a5b13; --warn-soft: #fbefdc;
+    --bar: #2f5d50; --bar-off: #c9c6bb; --code: #f1efe8;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #151614; --panel: #1e1f1c; --ink: #ecebe6; --muted: #a09f97; --line: #33342f;
+      --accent: #8cc7b2; --accent-soft: #23332d; --warn: #e8b46c; --warn-soft: #3a2e1d;
+      --bar: #8cc7b2; --bar-off: #4a4b45; --code: #262723;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+    font: 15px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  .wrap { max-width: 980px; margin: 0 auto; padding: 28px 16px 64px; }
+  header h1 { font-size: 26px; margin: 0 0 4px; letter-spacing: -0.01em; }
+  header p { margin: 0; color: var(--muted); }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0 22px; }
+  .chip { font-size: 12.5px; padding: 4px 10px; border: 1px solid var(--line); border-radius: 999px;
+    background: var(--panel); color: var(--muted); }
+  .chip b { color: var(--ink); font-weight: 600; }
+  .tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); margin-bottom: 18px; }
+  .tab { background: none; border: 0; padding: 10px 14px; font: inherit; color: var(--muted);
+    cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; }
+  .tab.on { color: var(--ink); border-color: var(--accent); font-weight: 600; }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 18px; }
+  textarea { width: 100%; min-height: 70px; resize: vertical; font: inherit; color: var(--ink);
+    background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; }
+  textarea:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .row { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-top: 12px; }
+  button.go { background: var(--accent); color: var(--panel); border: 0; border-radius: 8px;
+    padding: 10px 18px; font: inherit; font-weight: 600; cursor: pointer; }
+  button.go:disabled { opacity: .6; cursor: wait; }
+  .params { display: flex; gap: 16px; flex-wrap: wrap; color: var(--muted); font-size: 13px; margin-left: auto; }
+  .params label { display: flex; align-items: center; gap: 6px; }
+  .params input { width: 90px; accent-color: var(--accent); }
+  .ejemplos { margin-top: 14px; display: flex; flex-wrap: wrap; gap: 6px; }
+  .ejemplos span { font-size: 12px; color: var(--muted); width: 100%; }
+  .ej { font: inherit; font-size: 13px; background: var(--bg); color: var(--ink); border: 1px solid var(--line);
+    border-radius: 999px; padding: 4px 10px; cursor: pointer; }
+  .ej.fuera { border-style: dashed; }
+  .ej:hover { border-color: var(--accent); }
+  h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 26px 0 10px; }
+  .respuesta { white-space: pre-wrap; font-size: 16px; }
+  .estado { display: inline-block; font-size: 12px; font-weight: 600; padding: 3px 9px; border-radius: 999px; margin-bottom: 10px; }
+  .estado.ok { background: var(--accent-soft); color: var(--accent); }
+  .estado.no { background: var(--warn-soft); color: var(--warn); }
+  .motivo { color: var(--muted); font-size: 13px; margin-top: 8px; }
+  .cita { display: inline-block; font-size: 11px; font-weight: 700; background: var(--accent-soft); color: var(--accent);
+    border-radius: 4px; padding: 0 5px; margin: 0 1px; cursor: pointer; vertical-align: 2px; }
+  .pasos { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .paso { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+  .paso small { color: var(--muted); display: block; font-size: 11.5px; }
+  .paso b { font-size: 14px; }
+  @media (max-width: 640px) { .pasos { grid-template-columns: 1fr 1fr; } }
+  .fuente { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; margin-bottom: 8px; }
+  .fuente.off { opacity: .55; }
+  .fuente.flash { outline: 2px solid var(--accent); }
+  .fuente .top { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .n { font-weight: 700; color: var(--accent); }
+  .doc { font-weight: 600; }
+  .sec { color: var(--muted); font-size: 13px; }
+  .score { margin-left: auto; display: flex; align-items: center; gap: 8px; font-variant-numeric: tabular-nums; font-size: 13px; }
+  .barra { width: 110px; height: 6px; background: var(--line); border-radius: 3px; overflow: hidden; position: relative; }
+  .barra i { display: block; height: 100%; background: var(--bar); }
+  .fuente.off .barra i { background: var(--bar-off); }
+  .barra .umbral { position: absolute; top: -2px; bottom: -2px; width: 2px; background: var(--warn); }
+  .texto { margin-top: 8px; font-size: 13.5px; color: var(--ink); white-space: pre-wrap;
+    background: var(--code); border-radius: 6px; padding: 8px 10px; }
+  details summary { cursor: pointer; color: var(--muted); font-size: 13px; }
+  pre { white-space: pre-wrap; font-size: 12.5px; background: var(--code); padding: 10px; border-radius: 8px; overflow-x: auto; }
+  .error { color: var(--warn); background: var(--warn-soft); padding: 10px 12px; border-radius: 8px; }
+  select { font: inherit; padding: 6px 8px; border-radius: 6px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); }
+  .frag { border-top: 1px solid var(--line); padding: 10px 0; }
+  .frag .meta { font-size: 12.5px; color: var(--muted); display: flex; gap: 10px; flex-wrap: wrap; }
+  .frag code { font-size: 11.5px; color: var(--muted); }
+  .hidden { display: none; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Pregunta a tus documentos</h1>
+    <p>Aplicación RAG (Retrieval-Augmented Generation): busca en los documentos y responde citando sus fuentes.</p>
+  </header>
+  <div class="chips" id="chips"></div>
+
+  <div class="tabs">
+    <button class="tab on" data-tab="preguntar">Preguntar</button>
+    <button class="tab" data-tab="fragmentos">Fragmentos (chunking)</button>
+  </div>
+
+  <section id="preguntar">
+    <div class="panel">
+      <textarea id="q" placeholder="Ej.: ¿Cuánto cuesta un examen extraordinario?"></textarea>
+      <div class="row">
+        <button class="go" id="btn">Preguntar</button>
+        <div class="params">
+          <label>top-k <input type="range" id="k" min="1" max="10" step="1"> <b id="kv"></b></label>
+          <label>umbral <input type="range" id="u" min="0" max="0.9" step="0.05"> <b id="uv"></b></label>
+        </div>
+      </div>
+      <div class="ejemplos">
+        <span>Ejemplos (los de borde punteado NO están en los documentos):</span>
+        <button class="ej">¿Cuánto cuesta un examen extraordinario?</button>
+        <button class="ej">¿Qué promedio necesito para la beca de excelencia?</button>
+        <button class="ej">¿A qué hora abre la biblioteca los sábados?</button>
+        <button class="ej">¿Puedo usar inteligencia artificial en mis tareas?</button>
+        <button class="ej">¿Cuáles son las opciones de titulación?</button>
+        <button class="ej fuera">¿Cuál es la capital de Francia?</button>
+        <button class="ej fuera">¿Cuánto gana el director del instituto?</button>
+      </div>
+    </div>
+
+    <div id="resultado" class="hidden">
+      <h2>Respuesta</h2>
+      <div class="panel">
+        <span class="estado" id="estado"></span>
+        <div class="respuesta" id="respuesta"></div>
+        <div class="motivo" id="motivo"></div>
+      </div>
+
+      <h2>Cómo se obtuvo</h2>
+      <div class="pasos" id="pasos"></div>
+
+      <h2>Fragmentos recuperados (búsqueda semántica)</h2>
+      <div id="fuentes"></div>
+
+      <details id="promptBox" class="hidden" style="margin-top:14px">
+        <summary>Ver el prompt que se envió al LLM</summary>
+        <pre id="prompt"></pre>
+      </details>
+    </div>
+    <div id="err" class="error hidden" style="margin-top:16px"></div>
+  </section>
+
+  <section id="fragmentos" class="hidden">
+    <div class="panel">
+      <div class="row" style="margin-top:0">
+        <label>Documento: <select id="docSel"><option value="">Todos</option></select></label>
+        <span class="sec" id="fragCount"></span>
+      </div>
+      <div id="fragList" style="margin-top:10px"></div>
+    </div>
+  </section>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+// Muestra las negritas de Markdown (**texto**) como negritas reales
+const md = (s) => esc(s).replace(/\*\*(.+?)\*\*/g, "<b>$1</b>");
+let info = null;
+
+async function cargarInfo() {
+  info = await (await fetch("/api/info")).json();
+  $("chips").innerHTML = [
+    ["LLM", info.llm], ["Documentos", info.documentos], ["Fragmentos", info.fragmentos],
+    ["Embeddings", `${info.modeloEmbeddings?.split("/").pop()} · ${info.dimensiones} dim.`],
+    ["Chunk", `${info.chunkSize} car. / overlap ${info.chunkOverlap}`],
+  ].map(([k, v]) => `<span class="chip">${k}: <b>${esc(v)}</b></span>`).join("");
+  $("k").value = info.topK; $("u").value = info.minScore; actualizarParams();
+  for (const doc of Object.keys(info.porDocumento)) {
+    $("docSel").insertAdjacentHTML("beforeend", `<option>${esc(doc)}</option>`);
+  }
+}
+function actualizarParams() { $("kv").textContent = $("k").value; $("uv").textContent = Number($("u").value).toFixed(2); }
+$("k").oninput = $("u").oninput = actualizarParams;
+
+async function preguntar() {
+  const pregunta = $("q").value.trim();
+  if (!pregunta) return;
+  $("btn").disabled = true; $("btn").textContent = "Buscando…";
+  $("err").classList.add("hidden");
+  try {
+    const res = await fetch("/api/preguntar", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ pregunta, topK: Number($("k").value), minScore: Number($("u").value) }),
+    });
+    const r = await res.json();
+    if (!res.ok) throw new Error(r.error);
+    mostrar(r);
+  } catch (e) {
+    $("err").textContent = e.message; $("err").classList.remove("hidden");
+  } finally {
+    $("btn").disabled = false; $("btn").textContent = "Preguntar";
+  }
+}
+
+function mostrar(r) {
+  $("resultado").classList.remove("hidden");
+  $("estado").className = "estado " + (r.sinInformacion ? "no" : "ok");
+  $("estado").textContent = r.sinInformacion ? "Sin información suficiente" : "Respondida con los documentos";
+  // Las citas [n] se convierten en etiquetas que resaltan su fuente
+  $("respuesta").innerHTML = md(r.respuesta)
+    .replace(/\[(\d+)\]/g, '<span class="cita" data-n="$1">$1</span>');
+  $("motivo").textContent = r.motivo || "";
+
+  const relevantes = r.candidatos.filter((c) => c.score >= r.parametros.minScore).length;
+  $("pasos").innerHTML = [
+    ["1 · Embedding de la pregunta", `${r.tiempos.embeddingMs} ms`],
+    ["2 · Búsqueda semántica", `top-${r.parametros.topK} en ${r.tiempos.busquedaMs} ms`],
+    ["3 · Filtro por umbral ≥ " + r.parametros.minScore, `${relevantes} de ${r.candidatos.length} pasan`],
+    ["4 · Generación con LLM", r.tiempos.llmMs !== undefined ? `${r.tiempos.llmMs} ms` : "no se llamó"],
+  ].map(([t, v]) => `<div class="paso"><small>${t}</small><b>${v}</b></div>`).join("");
+
+  const textoPorId = Object.fromEntries((r.fuentes || []).map((f) => [f.id, f]));
+  $("fuentes").innerHTML = r.candidatos.map((c) => {
+    const f = textoPorId[c.id];
+    const on = c.score >= r.parametros.minScore;
+    const ubic = [c.section, c.page ? `pág. ${c.page}` : null].filter(Boolean).join(" · ");
+    return `<div class="fuente ${on ? "" : "off"}" ${f ? `id="f${f.n}"` : ""}>
+      <div class="top">
+        ${f ? `<span class="n">[${f.n}]</span>` : ""}
+        <span class="doc">${esc(c.source)}</span><span class="sec">${esc(ubic)}</span>
+        <span class="score">${on ? "" : "descartado · "}${c.score.toFixed(3)}
+          <span class="barra"><i style="width:${Math.max(0, c.score) * 100}%"></i>
+          <span class="umbral" style="left:${r.parametros.minScore * 100}%"></span></span></span>
+      </div>
+      <div class="texto">${md(f ? f.text : c.preview + "…")}</div>
+    </div>`;
+  }).join("");
+
+  $("promptBox").classList.toggle("hidden", !r.prompt);
+  $("prompt").textContent = r.prompt || "";
+}
+
+$("respuesta").addEventListener("click", (e) => {
+  const n = e.target.dataset?.n; const el = n && $("f" + n);
+  if (!el) return;
+  el.scrollIntoView({ behavior: "smooth", block: "center" });
+  el.classList.add("flash"); setTimeout(() => el.classList.remove("flash"), 1200);
+});
+$("btn").onclick = preguntar;
+$("q").addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); preguntar(); } });
+document.querySelectorAll(".ej").forEach((b) => (b.onclick = () => { $("q").value = b.textContent; preguntar(); }));
+
+document.querySelectorAll(".tab").forEach((t) => (t.onclick = () => {
+  document.querySelectorAll(".tab").forEach((x) => x.classList.toggle("on", x === t));
+  $("preguntar").classList.toggle("hidden", t.dataset.tab !== "preguntar");
+  $("fragmentos").classList.toggle("hidden", t.dataset.tab !== "fragmentos");
+  if (t.dataset.tab === "fragmentos") cargarFragmentos();
+}));
+
+async function cargarFragmentos() {
+  const doc = $("docSel").value;
+  const lista = await (await fetch("/api/fragmentos" + (doc ? "?doc=" + encodeURIComponent(doc) : ""))).json();
+  $("fragCount").textContent = `${lista.length} fragmentos`;
+  $("fragList").innerHTML = lista.map((f) => `<div class="frag">
+    <div class="meta"><b>${esc(f.id)}</b><span>${esc(f.section || "")}</span><span>${f.text.length} caracteres</span>${f.page ? `<span>pág. ${f.page}</span>` : ""}</div>
+    <div class="texto">${md(f.text)}</div>
+    <code>vector (${f.dimensiones} dim.): [${f.vector.map((x) => x.toFixed(3)).join(", ")}, …]</code>
+  </div>`).join("");
+}
+$("docSel").onchange = cargarFragmentos;
+
+cargarInfo();
+</script>
+</body>
+</html>

@@ -1,0 +1,748 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ampliar el conocimiento de una IA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,600;0,7..72,800;1,7..72,400&family=Caveat:wght@500;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  /* Identidad: hoja de cuaderno de cuadrícula + tinta azul + marcatextos amarillo (el mismo de la guía).
+     Lienzo fijo de 1920×1080 escalado a la pantalla. Una sola diapositiva amarilla: la conclusión. */
+  :root {
+    --paper: #fbfcff;
+    --grid: #e4eaf7;
+    --text: #1f2538;
+    --muted: #59627f;
+    --pen: #2745b5;
+    --margin: #dd4f67;
+    --hl: #fff04d;
+    --rule: #cdd6ec;
+    --ink-bg: #1d2b63;
+    --ink-text: #eef2ff;
+    --ink-muted: #b4c1ea;
+    --serif: "Literata", Georgia, "Times New Roman", serif;
+    --hand: "Caveat", "Segoe Print", "Comic Sans MS", cursive;
+    --mono: "IBM Plex Mono", Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body { background: #0f1633; overflow: hidden; font-family: var(--serif); color: var(--text); }
+
+  .stage { position: fixed; inset: 0; }
+  .deck { position: absolute; left: 50%; top: 50%; width: 1920px; height: 1080px; transform-origin: center center; }
+
+  .slide {
+    position: absolute; inset: 0; padding: 110px 128px 150px;
+    display: flex; flex-direction: column; gap: 34px;
+    font-size: 32px; line-height: 1.45;
+    visibility: hidden; opacity: 0; transition: opacity .35s ease;
+    overflow: hidden;
+  }
+  .slide.active { visibility: visible; opacity: 1; }
+  .paper {
+    background-color: var(--paper);
+    background-image: linear-gradient(var(--grid) 2px, transparent 2px), linear-gradient(90deg, var(--grid) 2px, transparent 2px);
+    background-size: 48px 48px;
+  }
+  .paper::before { content: ""; position: absolute; top: 0; bottom: 0; left: 88px; width: 3px; background: var(--margin); }
+  .ink { background: var(--ink-bg); color: var(--ink-text); }
+  .yellow { background: var(--hl); color: var(--text); }
+
+  h1, h2, h3, h4 { margin: 0; font-family: var(--serif); text-wrap: balance; }
+  h1 { font-size: 112px; font-weight: 800; line-height: 1.02; letter-spacing: -0.02em; }
+  h2 { font-size: 66px; font-weight: 800; line-height: 1.08; letter-spacing: -0.015em; }
+  h3 { font-size: 40px; font-weight: 600; line-height: 1.2; }
+  h4 { font-size: 27px; font-weight: 600; color: var(--pen); margin-bottom: 6px; }
+  .ink h4 { color: var(--hl); }
+  p { margin: 0; }
+  .lead { font-size: 38px; line-height: 1.4; max-width: 1400px; }
+  .muted { color: var(--muted); }
+  .ink .muted { color: var(--ink-muted); }
+  .hand { font-family: var(--hand); color: var(--pen); font-weight: 700; }
+  .ink .hand { color: var(--hl); }
+  .mark { background: linear-gradient(transparent 14%, var(--hl) 14%, var(--hl) 86%, transparent 86%); padding: 0 6px; color: var(--text); }
+  .active .sweep { background-image: linear-gradient(transparent 12%, var(--hl) 12%, var(--hl) 88%, transparent 88%); background-repeat: no-repeat; background-size: 100% 100%; animation: sweep 1s .4s cubic-bezier(.6,.1,.3,1) both; -webkit-box-decoration-break: clone; box-decoration-break: clone; padding: 0 6px; color: var(--text); }
+  @keyframes sweep { from { background-size: 0% 100%; } to { background-size: 100% 100%; } }
+  @media (prefers-reduced-motion: reduce) { .active .sweep { animation: none; } .slide { transition: none; } }
+  code, .mono { font-family: var(--mono); font-size: .82em; }
+
+  .foot { position: absolute; left: 128px; right: 128px; bottom: 54px; display: flex; justify-content: space-between; font-size: 24px; color: var(--muted); }
+  .ink .foot { color: var(--ink-muted); }
+  .yellow .foot { color: #4b4a2a; }
+
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 64px; }
+  .cols > * { min-width: 0; }
+
+  /* Portada */
+  .cover { justify-content: center; gap: 40px; }
+  .cover h1 { max-width: 1500px; }
+  .cover .team { font-size: 34px; color: var(--muted); }
+  .cover .who { font-family: var(--hand); font-size: 46px; color: var(--pen); }
+
+  /* Problema: tres límites */
+  .limits { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; border-top: 3px solid var(--text); }
+  .limits div { padding: 28px 40px 0 0; }
+  .limits div + div { padding-left: 40px; border-left: 2px solid var(--rule); }
+  .limits b { display: block; font-size: 38px; margin-bottom: 10px; }
+
+  /* Dos caminos */
+  .paths { display: grid; grid-template-columns: 1fr 1fr; gap: 0; flex: 1; }
+  .paths > div { padding: 40px 56px; display: flex; flex-direction: column; gap: 22px; }
+  .paths > div:first-child { border-right: 3px dashed var(--rule); padding-left: 0; }
+  .paths ul { margin: 0; padding-left: 36px; display: grid; gap: 12px; font-size: 36px; }
+  .paths li::marker { color: var(--margin); }
+
+  /* Técnica */
+  .tech { gap: 26px; }
+  .tech-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 40px; }
+  .tech-head .count { font-family: var(--hand); font-size: 40px; color: var(--margin); font-weight: 700; display: block; margin-bottom: 4px; }
+  .tech-head .aka { font-size: 30px; color: var(--muted); font-style: italic; margin-top: 8px; }
+  .stamp {
+    flex: none; transform: rotate(-6deg); margin-top: 18px;
+    border: 5px solid currentColor; border-radius: 14px; padding: 10px 26px 12px;
+    font-family: var(--hand); font-weight: 700; font-size: 42px; line-height: 1.05; text-align: center;
+  }
+  .stamp.no { color: var(--pen); }
+  .stamp.si { color: var(--margin); }
+  .tech .what { font-size: 34px; line-height: 1.42; max-width: 1580px; }
+  .quad { display: grid; grid-template-columns: 1fr 1fr; gap: 26px 64px; font-size: 27px; line-height: 1.42; }
+  .quad > div { min-width: 0; border-top: 2px solid var(--rule); padding-top: 14px; }
+  .example { font-size: 28px; line-height: 1.42; border-left: 8px solid var(--hl); padding: 6px 0 6px 22px; }
+  .example .hand { font-size: 38px; margin-right: 10px; }
+
+  /* Tablas */
+  table { border-collapse: collapse; width: 100%; font-size: 27px; line-height: 1.3; }
+  th, td { text-align: left; padding: 14px 18px 14px 0; border-bottom: 2px solid var(--rule); vertical-align: top; }
+  th { font-size: 24px; color: var(--muted); font-weight: 600; border-bottom: 3px solid var(--text); }
+  td:first-child { font-weight: 600; }
+  .yes { color: var(--margin); font-weight: 600; }
+  .noo { color: var(--pen); font-weight: 600; }
+  tr.pick td { background: linear-gradient(transparent 8%, var(--hl) 8%, var(--hl) 92%, transparent 92%); }
+
+  /* Escenarios */
+  .scen { display: grid; grid-template-columns: 1fr 1fr; gap: 26px 64px; }
+  .scen > div { border-top: 2px solid var(--rule); padding-top: 14px; font-size: 28px; line-height: 1.38; }
+  .scen b { display: block; font-size: 32px; color: var(--pen); margin-top: 6px; }
+
+  /* Diagrama */
+  .diagram { position: relative; width: 1664px; height: 560px; }
+  .diagram svg { position: absolute; inset: 0; overflow: visible; }
+  .node {
+    position: absolute; display: grid; place-items: center; text-align: center;
+    background: var(--paper); border: 3px solid var(--text); border-radius: 10px;
+    font-size: 24px; line-height: 1.2; padding: 8px 10px;
+  }
+  .node b { display: block; font-size: 26px; }
+  .node.store { border-radius: 50% / 18%; background: #eef2ff; }
+  .node.q { background: var(--hl); }
+  .node.no { border-style: dashed; color: var(--margin); border-color: var(--margin); }
+  .lane { position: absolute; font-family: var(--hand); font-size: 36px; color: var(--pen); font-weight: 700; }
+
+  /* Chunking */
+  ol.seq { margin: 0; padding: 0; list-style: none; counter-reset: s; display: grid; gap: 22px; }
+  ol.seq li { counter-increment: s; display: grid; grid-template-columns: 58px 1fr; gap: 16px; font-size: 29px; line-height: 1.38; }
+  ol.seq li::before { content: counter(s); width: 50px; height: 50px; border: 3px solid var(--pen); border-radius: 50%; display: grid; place-items: center; font: 700 34px/1 var(--hand); color: var(--pen); transform: rotate(-6deg); }
+  .note { font-family: var(--hand); font-size: 38px; color: var(--margin); font-weight: 700; transform: rotate(-2deg); }
+
+  /* Embeddings */
+  .emb { display: grid; gap: 22px; }
+  .emb .row { display: grid; grid-template-columns: 1fr 640px; gap: 30px; align-items: center; border-bottom: 2px solid var(--rule); padding-bottom: 18px; }
+  .emb .txt { font-size: 30px; }
+  .emb .vec { font-family: var(--mono); font-size: 23px; color: var(--muted); }
+  .sims { display: flex; gap: 80px; align-items: flex-end; }
+  .sim .n { font-size: 96px; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; }
+  .sim .l { font-size: 26px; color: var(--muted); max-width: 520px; }
+  .formula { font-size: 44px; font-style: italic; }
+
+  /* Dos capas */
+  .layers { display: grid; grid-template-columns: 1fr 1fr; gap: 64px; }
+  .layers > div { border-top: 6px solid var(--hl); padding-top: 18px; display: flex; flex-direction: column; gap: 12px; font-size: 28px; line-height: 1.4; }
+  .scores td.num { font-variant-numeric: tabular-nums; font-family: var(--mono); font-size: 26px; white-space: nowrap; }
+
+  /* Resultados */
+  .big3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 64px; }
+  .big3 .n { font-size: 150px; font-weight: 800; line-height: 1; letter-spacing: -0.03em; }
+  .big3 .l { font-size: 30px; line-height: 1.35; color: var(--ink-muted); margin-top: 12px; }
+
+  /* Conclusiones */
+  .qa .q { font-family: var(--hand); font-size: 48px; color: var(--pen); font-weight: 700; line-height: 1.1; }
+  .ink.qa .q { color: var(--hl); }
+  .points { display: grid; grid-template-columns: 1fr 1fr; gap: 22px 64px; }
+  .points > div { font-size: 29px; line-height: 1.38; border-top: 2px solid var(--rule); padding-top: 12px; }
+  .ink .points > div { border-color: #34478f; }
+  .points b { display: block; font-size: 32px; }
+  .statement { font-size: 92px; font-weight: 800; line-height: 1.08; letter-spacing: -0.02em; max-width: 1600px; }
+
+  /* Demo en vivo */
+  .demo { gap: 22px; }
+  .demo-top { display: flex; justify-content: space-between; align-items: baseline; gap: 30px; }
+  .status { font-size: 24px; color: var(--muted); }
+  .status.ok::before { content: ""; display: inline-block; width: 16px; height: 16px; border-radius: 50%; background: #2f9a5f; margin-right: 10px; }
+  .status.err { color: var(--margin); }
+  .ask { display: flex; gap: 18px; }
+  .ask input {
+    flex: 1; min-width: 0; font: 34px var(--serif); color: var(--text); background: #fff;
+    border: 3px solid var(--text); border-radius: 10px; padding: 16px 22px;
+  }
+  .ask input:focus { outline: 6px solid var(--hl); outline-offset: 0; }
+  .ask button, .chips button {
+    font: 600 30px var(--serif); cursor: pointer; border-radius: 10px;
+  }
+  .ask button { background: var(--pen); color: #fff; border: 0; padding: 0 40px; }
+  .ask button:disabled { opacity: .6; cursor: wait; }
+  .ask button:focus-visible, .chips button:focus-visible { outline: 6px solid var(--hl); }
+  .chips { display: flex; flex-wrap: wrap; gap: 12px; }
+  .chips button { font-size: 23px; font-weight: 400; background: #fff; color: var(--text); border: 2px solid var(--rule); padding: 6px 16px; border-radius: 999px; }
+  .chips button.out { border-style: dashed; border-color: var(--margin); }
+  .chips button:hover { background: var(--hl); border-color: var(--hl); }
+  .result { display: grid; grid-template-columns: 1fr 1fr; gap: 56px; flex: 1; min-height: 0; }
+  .result > div { min-width: 0; min-height: 0; overflow: auto; }
+  .state { display: inline-block; font-size: 22px; font-weight: 600; padding: 3px 14px; border-radius: 999px; border: 2px solid var(--pen); color: var(--pen); margin-bottom: 12px; }
+  .state.no { border-color: var(--margin); color: var(--margin); }
+  .answer { font-size: 31px; line-height: 1.45; white-space: pre-wrap; }
+  .answer .cite { display: inline-block; font-size: 18px; font-weight: 700; border: 2px solid var(--pen); color: var(--pen); border-radius: 5px; padding: 0 6px; vertical-align: 4px; }
+  .why { font-size: 23px; color: var(--muted); margin-top: 10px; }
+  .timing { display: grid; grid-template-columns: repeat(4, 1fr); border: 2px solid var(--rule); margin-top: 22px; background: #fff; }
+  .timing div { padding: 8px 14px; font-size: 22px; }
+  .timing div + div { border-left: 2px solid var(--rule); }
+  .timing small { display: block; color: var(--muted); font-size: 18px; }
+  .timing b { font-variant-numeric: tabular-nums; }
+  .frags { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; }
+  .frag { font-size: 23px; line-height: 1.35; min-width: 0; }
+  .frag .top { display: flex; justify-content: space-between; gap: 16px; }
+  .frag .top span { min-width: 0; }
+  .frag .src { font-weight: 600; }
+  .frag .sec { color: var(--muted); font-style: italic; }
+  .frag .sc { font-family: var(--mono); font-size: 22px; font-variant-numeric: tabular-nums; flex: none; }
+  .frag .stroke { position: relative; height: 14px; margin-top: 6px; }
+  .frag .stroke b { position: absolute; inset: 0 auto 0 0; background: var(--hl); border-radius: 3px 8px 4px 3px; }
+  .frag .stroke u { position: absolute; top: -4px; bottom: -4px; width: 3px; background: var(--margin); }
+  .frag.off { color: var(--muted); }
+  .frag.off .stroke b { background: var(--rule); }
+  .frag .prev { color: var(--muted); font-size: 21px; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .frag .top > span:first-child { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .placeholder { font-size: 30px; color: var(--muted); }
+
+  /* Controles fuera del lienzo */
+  .hud { position: fixed; left: 50%; transform: translateX(-50%); bottom: 14px; display: flex; gap: 8px; align-items: center; z-index: 5; opacity: 1; transition: opacity .3s; background: rgba(15,22,51,.85); padding: 6px; border-radius: 10px; }
+  body.idle .hud:not(:focus-within) { opacity: 0; pointer-events: none; }
+  body.idle { cursor: none; }
+  .hud button { font: 600 14px system-ui, sans-serif; background: #1d2b63; color: #eef2ff; border: 1px solid #3a4c96; border-radius: 6px; padding: 6px 10px; cursor: pointer; }
+  .hud span { font: 14px system-ui, sans-serif; color: #b4c1ea; min-width: 60px; text-align: center; }
+  .notes-panel { position: fixed; left: 0; right: 0; bottom: 0; max-height: 40vh; overflow: auto; background: rgba(15,22,51,.96); color: #eef2ff; font: 18px/1.5 system-ui, sans-serif; padding: 16px 24px 52px; z-index: 4; }
+  .notes-panel b { color: #fff04d; }
+</style>
+</head>
+<body>
+<div class="stage"><div class="deck" id="deck">
+
+<!-- ===================== PORTADA ===================== -->
+<section class="slide paper cover" data-part="Portada" data-notes="Presentarse. Decir que la práctica tiene tres partes: la investigación de seis técnicas, una aplicación RAG que vamos a demostrar en vivo, y las conclusiones.">
+  <p class="who">Práctica de Inteligencia Artificial</p>
+  <h1>Técnicas para ampliar el <span class="sweep">conocimiento de una IA</span></h1>
+  <p class="lead muted">Seis formas de darle a un modelo lo que no sabe, y una aplicación RAG que lo demuestra.</p>
+  <p class="team">[Nombre del integrante 1] y [Nombre del integrante 2] &nbsp;|&nbsp; [Fecha]</p>
+</section>
+
+<!-- ===================== PARTE 1 ===================== -->
+<section class="slide paper" data-part="Parte 1. Investigación" data-notes="Un LLM solo sabe lo que aprendió al entrenarse, y ese conocimiento está en sus pesos. Tres límites: no sabe lo reciente, no conoce lo privado y, cuando no sabe, puede inventar. Todas las técnicas que vamos a ver atacan estos límites.">
+  <h2>Un modelo solo sabe lo que aprendió al entrenarse</h2>
+  <p class="lead">Ese conocimiento está guardado en sus <span class="mark">parámetros</span>, los pesos de la red neuronal. Eso le pone tres límites:</p>
+  <div class="limits">
+    <div><b>Fecha de corte</b>No conoce lo que pasó después de su entrenamiento.</div>
+    <div><b>Información privada</b>No conoce los documentos internos de una escuela o empresa.</div>
+    <div><b>Alucinaciones</b>Cuando no sabe algo, puede inventar una respuesta convincente.</div>
+  </div>
+</section>
+
+<section class="slide paper" data-part="Parte 1. Investigación" data-notes="La pregunta clave para clasificar cada técnica: ¿cambia los parámetros del modelo o no? Las de la izquierda entrenan; las de la derecha le dan la información en el momento de responder.">
+  <h2>Hay dos caminos para darle más conocimiento</h2>
+  <div class="paths">
+    <div>
+      <h3>Cambiar sus parámetros</h3>
+      <p class="muted">Se entrena el modelo y el conocimiento queda en los pesos.</p>
+      <ul>
+        <li>Pre-entrenamiento</li>
+        <li>Fine-tuning</li>
+        <li>Destilación</li>
+      </ul>
+    </div>
+    <div>
+      <h3>Darle la información al responder</h3>
+      <p class="muted">El modelo no cambia; el conocimiento entra por el contexto.</p>
+      <ul>
+        <li>Prompt e instrucciones</li>
+        <li>RAG</li>
+        <li>Memoria</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide paper tech" data-part="Parte 1. Investigación" data-notes="Es lo más simple: se escribe todo en el prompt. Funciona mientras la información quepa en la ventana de contexto. El problema es que cada pregunta paga por todo ese texto.">
+  <div class="tech-head">
+    <div><span class="count">1 de 6</span><h2>Darle la información en el prompt</h2><p class="aka">Prompt engineering e in-context learning</p></div>
+    <div class="stamp no">No modifica<br>parámetros</div>
+  </div>
+  <p class="what">Se escriben en la petición las instrucciones, ejemplos de entrada y salida y los datos de referencia. El modelo los lee dentro de su ventana de contexto y los olvida al terminar.</p>
+  <div class="quad">
+    <div><h4>Ventajas</h4>Inmediato y barato: no hay entrenamiento ni infraestructura. Funciona con cualquier modelo.</div>
+    <div><h4>Desventajas</h4>Limitado por el tamaño del contexto. Cada pregunta paga todos los tokens. No escala a miles de documentos.</div>
+    <div><h4>Herramientas</h4>APIs de Anthropic, OpenAI o Gemini; plantillas de LangChain; prompt caching.</div>
+    <div><h4>Cómo entra el conocimiento</h4>Como texto dentro de la petición, en cada llamada.</div>
+  </div>
+  <p class="example"><span class="hand">Ejemplo</span>El bot de una pizzería con el menú, los horarios y las reglas de envío en su system prompt.</p>
+</section>
+
+<section class="slide paper tech" data-part="Parte 1. Investigación" data-notes="Es como se crean los modelos base. Desde cero cuesta millones de dólares. El pre-entrenamiento continuo parte de un modelo existente y le enseña un dominio o idioma nuevo.">
+  <div class="tech-head">
+    <div><span class="count">2 de 6</span><h2>Entrenar desde cero o continuar el entrenamiento</h2><p class="aka">Pre-training y continued pre-training</p></div>
+    <div class="stamp si">Modifica<br>todos</div>
+  </div>
+  <p class="what">Se entrena la red con billones de tokens para que aprenda a predecir la siguiente palabra, ya sea desde pesos aleatorios o partiendo de un modelo existente con un corpus nuevo.</p>
+  <div class="quad">
+    <div><h4>Ventajas</h4>Control total de datos, idioma y vocabulario. El modelo domina el tema sin contexto extra.</div>
+    <div><h4>Desventajas</h4>Miles de GPUs y millones de dólares. Olvido catastrófico. El conocimiento queda congelado.</div>
+    <div><h4>Herramientas</h4>PyTorch, Megatron-LM y NeMo, DeepSpeed, Hugging Face.</div>
+    <div><h4>Cómo entra el conocimiento</h4>Comprimido en los pesos después de procesar el corpus.</div>
+  </div>
+  <p class="example"><span class="hand">Ejemplo</span>BloombergGPT, 50 mil millones de parámetros entrenados con datos financieros. Code Llama, que continuó el entrenamiento de Llama 2 con código.</p>
+</section>
+
+<section class="slide paper tech" data-part="Parte 1. Investigación" data-notes="El fine-tuning enseña comportamiento: formato, estilo, una tarea. Con LoRA se entrena menos del 1 por ciento de los parámetros. No es la mejor forma de enseñar hechos que cambian.">
+  <div class="tech-head">
+    <div><span class="count">3 de 6</span><h2>Adaptar un modelo existente</h2><p class="aka">Fine-tuning, LoRA y QLoRA</p></div>
+    <div class="stamp si">Modifica todos<br>o un adaptador</div>
+  </div>
+  <p class="what">Se entrena un poco más un modelo ya hecho con cientos o miles de ejemplos “entrada → salida esperada”. Con LoRA se congelan los pesos originales y se entrena menos del 1 % de parámetros extra.</p>
+  <div class="quad">
+    <div><h4>Ventajas</h4>Estilo y formato muy consistentes. Un modelo pequeño ajustado puede igualar a uno grande en una tarea.</div>
+    <div><h4>Desventajas</h4>El dataset es caro de construir. Actualizar implica reentrenar. No puede citar fuentes.</div>
+    <div><h4>Herramientas</h4>Hugging Face PEFT y TRL, Unsloth, Axolotl; servicios de OpenAI, Vertex AI y Bedrock.</div>
+    <div><h4>Cómo entra el conocimiento</h4>Mediante ejemplos que enseñan cómo responder.</div>
+  </div>
+  <p class="example"><span class="hand">Ejemplo</span>Un hospital ajusta un modelo abierto con LoRA y 5,000 notas médicas para que redacte reportes con su formato oficial.</p>
+</section>
+
+<section class="slide paper tech" data-part="Parte 1. Investigación" data-notes="RAG combina un buscador con un generador. Los documentos se indexan una vez; en cada pregunta se buscan los fragmentos relevantes y se le dan al modelo. Es la técnica que implementamos.">
+  <div class="tech-head">
+    <div><span class="count">4 de 6</span><h2>Recuperar información externa</h2><p class="aka">RAG, Retrieval-Augmented Generation</p></div>
+    <div class="stamp no">No modifica<br>parámetros</div>
+  </div>
+  <p class="what">Los documentos se dividen en fragmentos, se convierten en vectores y se guardan en una base vectorial. En cada pregunta se buscan los fragmentos más parecidos y el modelo responde con base en ellos.</p>
+  <div class="quad">
+    <div><h4>Ventajas</h4>Se actualiza al reindexar. Cita sus fuentes. Reduce las alucinaciones. Escala a millones de documentos.</div>
+    <div><h4>Desventajas</h4>Si la búsqueda falla, la respuesta falla. Más piezas que mantener. Le cuesta resumir todo el corpus.</div>
+    <div><h4>Herramientas</h4>LangChain, LlamaIndex, Chroma, FAISS, pgvector, Pinecone, Qdrant.</div>
+    <div><h4>Cómo entra el conocimiento</h4>Vive fuera del modelo y se inyecta en el contexto al preguntar.</div>
+  </div>
+  <p class="example"><span class="hand">Ejemplo</span>Nuestra aplicación: responde preguntas sobre los reglamentos del ITVS y muestra de qué documento salió cada dato.</p>
+</section>
+
+<section class="slide paper tech" data-part="Parte 1. Investigación" data-notes="Los modelos no tienen estado. La memoria es un sistema externo que guarda lo importante de conversaciones pasadas y lo vuelve a meter al contexto. Es como un RAG sobre la historia del usuario.">
+  <div class="tech-head">
+    <div><span class="count">5 de 6</span><h2>Recordar conversaciones anteriores</h2><p class="aka">Memoria de corto y largo plazo</p></div>
+    <div class="stamp no">No modifica<br>parámetros</div>
+  </div>
+  <p class="what">Un sistema externo guarda el historial reciente, resúmenes y hechos importantes del usuario, y los vuelve a incluir en el contexto de las conversaciones siguientes.</p>
+  <div class="quad">
+    <div><h4>Ventajas</h4>Personalización y continuidad entre sesiones. Indispensable para agentes con tareas largas.</div>
+    <div><h4>Desventajas</h4>Riesgos de privacidad. Puede recordar datos incorrectos. El historial consume tokens.</div>
+    <div><h4>Herramientas</h4>LangGraph, Mem0, Letta (antes MemGPT), Zep, herramienta de memoria de Claude.</div>
+    <div><h4>Cómo entra el conocimiento</h4>Se guarda después de cada interacción y se recupera en las siguientes.</div>
+  </div>
+  <p class="example"><span class="hand">Ejemplo</span>Un tutor de matemáticas que recuerda que el alumno batalla con fracciones y empieza la siguiente sesión por ahí.</p>
+</section>
+
+<section class="slide paper tech" data-part="Parte 1. Investigación" data-notes="Un modelo grande enseña a uno pequeño. El pequeño aprende de las probabilidades o de las respuestas del grande. Sirve para correr modelos en el celular o sin internet.">
+  <div class="tech-head">
+    <div><span class="count">6 de 6</span><h2>Pasar lo que sabe un modelo grande a uno pequeño</h2><p class="aka">Destilación de conocimiento</p></div>
+    <div class="stamp si">Modifica<br>el estudiante</div>
+  </div>
+  <p class="what">Un modelo grande, el maestro, genera probabilidades o respuestas, y con ellas se entrena un modelo pequeño, el estudiante, para que lo imite.</p>
+  <div class="quad">
+    <div><h4>Ventajas</h4>Modelos más pequeños, rápidos y baratos que pueden correr en un celular o sin internet.</div>
+    <div><h4>Desventajas</h4>El estudiante casi nunca supera al maestro. Algunos modelos comerciales prohíben usar sus respuestas para entrenar otros.</div>
+    <div><h4>Herramientas</h4>Hugging Face TRL (GKDTrainer), PyTorch, NVIDIA NeMo.</div>
+    <div><h4>Cómo entra el conocimiento</h4>En los pesos del estudiante, a partir de las salidas del maestro.</div>
+  </div>
+  <p class="example"><span class="hand">Ejemplo</span>DistilBERT: 40 % más pequeño y 60 % más rápido que BERT, conservando cerca del 97 % de su capacidad.</p>
+</section>
+
+<section class="slide paper" data-part="Parte 1. Investigación" data-notes="Resumen de la investigación. Fijarse en la columna de citar fuentes y en la de actualizar: ahí RAG gana claramente.">
+  <h2>Comparación de las seis técnicas</h2>
+  <table>
+    <thead><tr><th>Técnica</th><th>¿Modifica parámetros?</th><th>Costo</th><th>Actualizar conocimiento</th><th>Cita fuentes</th><th>Ideal para</th></tr></thead>
+    <tbody>
+      <tr><td>Prompt</td><td class="noo">No</td><td>Muy bajo</td><td>Inmediato, editando el prompt</td><td>Parcialmente</td><td>Reglas y datos pequeños</td></tr>
+      <tr><td>Pre-entrenamiento</td><td class="yes">Sí, todos</td><td>Altísimo</td><td>Reentrenar, meses</td><td>No</td><td>Dominio o idioma nuevo</td></tr>
+      <tr><td>Fine-tuning</td><td class="yes">Sí, o LoRA</td><td>Medio</td><td>Reentrenar, horas o días</td><td>No</td><td>Estilo, formato, una tarea</td></tr>
+      <tr class="pick"><td>RAG</td><td class="noo">No</td><td>Bajo a medio</td><td>Inmediato, reindexando</td><td>Sí</td><td>Datos grandes, privados o cambiantes</td></tr>
+      <tr><td>Memoria</td><td class="noo">No</td><td>Bajo a medio</td><td>Automático</td><td>Parcialmente</td><td>Personalización</td></tr>
+      <tr><td>Destilación</td><td class="yes">Sí, el estudiante</td><td>Medio a alto</td><td>Volver a destilar</td><td>No</td><td>Modelos pequeños y rápidos</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section class="slide paper" data-part="Parte 1. Investigación" data-notes="En la práctica se combinan. Nuestra app combina prompt con reglas estrictas y RAG.">
+  <h2>¿Cuál usaríamos en cada caso?</h2>
+  <div class="scen">
+    <div>Un bot con dos páginas de reglas y un tono definido<b>Prompt</b></div>
+    <div>Un modelo para una lengua indígena con poco texto en internet<b>Pre-entrenamiento continuo</b></div>
+    <div>Un banco que necesita respuestas en un JSON fijo con el tono de la marca<b>Fine-tuning con LoRA</b></div>
+    <div>Un asistente sobre reglamentos que cambian y debe citar la fuente<b>RAG</b></div>
+    <div>Un tutor que debe recordar al alumno entre sesiones<b>Memoria</b></div>
+    <div>Una app de celular que clasifica mensajes sin internet<b>Destilación</b></div>
+  </div>
+</section>
+
+<!-- ===================== PARTE 3 ===================== -->
+<section class="slide ink" data-part="Parte 3. Nuestra aplicación RAG" data-notes="Pasamos a la aplicación. Los documentos son de una escuela inventada para que se note que el modelo responde con lo que encuentra y no con lo que ya sabía.">
+  <p class="hand" style="font-size:48px">Parte 3</p>
+  <h1>Una app que responde preguntas sobre los reglamentos de una escuela</h1>
+  <p class="lead muted">El Instituto Tecnológico Valle Sereno es ficticio y sus datos son inventados a propósito: si la app responde “$450”, solo pudo sacarlo de los documentos.</p>
+  <div class="cols" style="margin-top:10px">
+    <p><span class="hand">Documentos</span><br>6 archivos: 4 Markdown, 1 TXT y 1 PDF, sobre becas, biblioteca, reglamento, servicios, trámites y conducta.</p>
+    <p><span class="hand">Tecnología</span><br>Node.js y Express, embeddings locales de 384 dimensiones, base vectorial propia y Llama 3.2 con Ollama.</p>
+  </div>
+</section>
+
+<section class="slide paper" data-part="Parte 3. Nuestra aplicación RAG" data-notes="Dos fases. Arriba, la indexación, que se corre una sola vez. Abajo, la consulta, en cada pregunta. Si ningún fragmento pasa el umbral de 0.35, ni siquiera se llama al modelo.">
+  <h2>Arquitectura</h2>
+  <div class="diagram" aria-label="Diagrama de arquitectura del RAG">
+    <svg viewBox="0 0 1664 560" width="1664" height="560" aria-hidden="true">
+      <defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#1f2538"/></marker>
+      <marker id="ahr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#dd4f67"/></marker></defs>
+      <g stroke="#1f2538" stroke-width="3" fill="none" marker-end="url(#ah)">
+        <line x1="300" y1="115" x2="336" y2="115"/><line x1="640" y1="115" x2="676" y2="115"/>
+        <line x1="980" y1="115" x2="1016" y2="115"/><line x1="1320" y1="115" x2="1356" y2="115"/>
+        <line x1="208" y1="355" x2="238" y2="355"/><line x1="450" y1="355" x2="480" y2="355"/>
+        <line x1="692" y1="355" x2="722" y2="355"/><line x1="934" y1="355" x2="964" y2="355"/>
+        <line x1="1176" y1="355" x2="1206" y2="355"/><line x1="1418" y1="355" x2="1448" y2="355"/>
+      </g>
+      <path d="M1510 170 V215 H588 V296" stroke="#2745b5" stroke-width="3" stroke-dasharray="10 8" fill="none" marker-end="url(#ah)"/>
+      <path d="M830 410 V466" stroke="#dd4f67" stroke-width="3" fill="none" marker-end="url(#ahr)"/>
+      <text x="1050" y="206" font-family="Caveat, cursive" font-size="30" font-weight="700" fill="#2745b5">vectores</text>
+      <text x="846" y="448" font-family="Caveat, cursive" font-size="30" font-weight="700" fill="#dd4f67">no</text>
+      <text x="940" y="336" font-family="Caveat, cursive" font-size="26" font-weight="700" fill="#1f2538">sí</text>
+    </svg>
+    <span class="lane" style="left:0;top:4px">Indexación: una sola vez, con npm run ingest</span>
+    <div class="node" style="left:0;top:60px;width:300px;height:110px"><span><b>6 documentos</b>MD, TXT y PDF</span></div>
+    <div class="node" style="left:340px;top:60px;width:300px;height:110px"><span><b>Extracción</b>texto de cada archivo</span></div>
+    <div class="node" style="left:680px;top:60px;width:300px;height:110px"><span><b>Chunking</b>700 car., overlap 120</span></div>
+    <div class="node" style="left:1020px;top:60px;width:300px;height:110px"><span><b>Embeddings</b>texto → 384 números</span></div>
+    <div class="node store" style="left:1360px;top:60px;width:300px;height:110px"><span><b>Base vectorial</b>45 fragmentos</span></div>
+    <span class="lane" style="left:0;top:240px">Consulta: en cada pregunta</span>
+    <div class="node q" style="left:0;top:300px;width:208px;height:110px"><span><b>Pregunta</b>del usuario</span></div>
+    <div class="node" style="left:242px;top:300px;width:208px;height:110px"><span><b>Embedding</b>de la pregunta</span></div>
+    <div class="node" style="left:484px;top:300px;width:208px;height:110px"><span><b>Búsqueda</b>coseno, top-4</span></div>
+    <div class="node" style="left:726px;top:300px;width:208px;height:110px"><span><b>¿Similitud</b>≥ 0.35?</span></div>
+    <div class="node" style="left:968px;top:300px;width:208px;height:110px"><span><b>Prompt</b>reglas + fragmentos</span></div>
+    <div class="node" style="left:1210px;top:300px;width:208px;height:110px"><span><b>LLM</b>Llama 3.2</span></div>
+    <div class="node q" style="left:1452px;top:300px;width:208px;height:110px"><span><b>Respuesta</b>con citas</span></div>
+    <div class="node no" style="left:640px;top:470px;width:420px;height:80px"><span>“No tengo información suficiente”</span></div>
+  </div>
+</section>
+
+<section class="slide paper" data-part="Parte 3. Nuestra aplicación RAG" data-notes="El tamaño de fragmento lo elegimos con un experimento. Con 500 caracteres, la oración de la calificación mínima quedaba separada de su sección y no se recuperaba; el modelo decía que no se especificaba. Con 700 se recuperó el dato correcto en las 13 preguntas.">
+  <h2>Chunking: cortar los documentos en fragmentos</h2>
+  <div class="cols">
+    <ol class="seq">
+      <li>Se corta primero por secciones, usando los títulos, para no mezclar temas.</li>
+      <li>Si una sección es larga, se corta por párrafo, luego por línea, oración y palabra.</li>
+      <li>Cada fragmento repite los últimos 120 caracteres del anterior, para no partir una idea.</li>
+      <li>Al vectorizar, se antepone el título de la sección al texto.</li>
+    </ol>
+    <div style="display:flex;flex-direction:column;gap:18px">
+      <p style="font-size:29px">¿De qué tamaño? Lo medimos: en cuántas de las 13 preguntas se recuperó el fragmento con el dato correcto.</p>
+      <table>
+        <thead><tr><th>Tamaño</th><th>Fragmentos</th><th>Dato recuperado</th></tr></thead>
+        <tbody>
+          <tr><td>400 / 80</td><td>60</td><td>12 de 13</td></tr>
+          <tr><td>500 / 100</td><td>54</td><td>11 de 13</td></tr>
+          <tr class="pick"><td>700 / 120</td><td>45</td><td>13 de 13</td></tr>
+          <tr><td>900 / 150</td><td>45</td><td>13 de 13</td></tr>
+        </tbody>
+      </table>
+      <p class="note">Con 500, “la calificación mínima es 70” quedaba fuera del top-4.</p>
+    </div>
+  </div>
+</section>
+
+<section class="slide paper" data-part="Parte 3. Nuestra aplicación RAG" data-notes="Un embedding convierte un texto en 384 números. El modelo está entrenado para que textos con el mismo significado queden cerca, aunque usen palabras distintas: entregar tarde y retraso en la devolución. Estos valores son reales, sacados de nuestra app.">
+  <h2>Embeddings: el significado convertido en números</h2>
+  <div class="emb">
+    <div class="row"><span class="txt">“¿Cuánto es la multa por entregar tarde un libro?”</span><span class="vec">[0.077, 0.046, −0.035, 0.031, 0.052, … 384]</span></div>
+    <div class="row"><span class="txt">“Por cada día de retraso en la devolución se cobra una multa de 8 pesos por libro.”</span><span class="vec">[−0.022, 0.019, −0.041, 0.072, 0.024, … 384]</span></div>
+    <div class="row"><span class="txt">“La red para estudiantes se llama ITVS-Alumnos.”</span><span class="vec">[0.035, 0.015, −0.026, −0.042, −0.057, … 384]</span></div>
+  </div>
+  <div class="sims">
+    <div class="sim"><div class="n"><span class="sweep">0.674</span></div><div class="l">pregunta y fragmento de la multa: mismo significado con palabras distintas</div></div>
+    <div class="sim"><div class="n muted">0.122</div><div class="l">pregunta y fragmento del Wi-Fi: no tienen relación</div></div>
+  </div>
+  <p class="muted" style="font-size:26px">Modelo paraphrase-multilingual-MiniLM-L12-v2, que corre en la computadora sin internet ni costo.</p>
+</section>
+
+<section class="slide paper" data-part="Parte 3. Nuestra aplicación RAG" data-notes="La búsqueda compara el vector de la pregunta contra los 45 vectores con similitud coseno y toma los 4 más parecidos. Para no inventar, hay dos capas: el umbral filtra lo que no es del tema, y la instrucción al modelo filtra lo que es del tema pero no está.">
+  <h2>Búsqueda semántica y cómo sabe cuándo no sabe</h2>
+  <div class="cols">
+    <div style="display:flex;flex-direction:column;gap:20px">
+      <p class="formula">cos(A, B) = A · B ⁄ (‖A‖ ‖B‖)</p>
+      <p style="font-size:28px">Como los vectores están normalizados, basta el producto punto. Se toman los 4 fragmentos más parecidos y se descartan los que no llegan a 0.35.</p>
+      <table class="scores">
+        <thead><tr><th>Pregunta</th><th>Mejor</th></tr></thead>
+        <tbody>
+          <tr><td>¿Cómo se llama la red wifi?</td><td class="num">0.846</td></tr>
+          <tr><td>¿Cuánto cuesta un extraordinario?</td><td class="num">0.829</td></tr>
+          <tr><td>¿Cuánto gana el director?</td><td class="num">0.564</td></tr>
+          <tr><td>¿Capital de Francia?</td><td class="num">0.157</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="layers" style="grid-template-columns:1fr">
+      <div><h3>Capa 1: el umbral</h3>Si ningún fragmento llega a 0.35, la app responde “no tengo información” sin llamar al modelo. Filtra lo que no es del tema, como la capital de Francia.</div>
+      <div><h3>Capa 2: la instrucción</h3>El prompt obliga al modelo a decir “no tengo información” si los fragmentos no contienen la respuesta. Filtra lo que es del tema pero no está, como el sueldo del director.</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide paper demo" id="demo" data-part="Parte 3. Demo en vivo" data-notes="Demo. Orden sugerido: 1) examen extraordinario, mostrar la cita y la similitud. 2) multa por entregar tarde: búsqueda semántica con otras palabras. 3) inteligencia artificial: viene del PDF. 4) capital de Francia: capa 1, no se llama al modelo. 5) sueldo del director: capa 2. Mientras escribes, las flechas no cambian de diapositiva; presiona Esc para salir de la caja.">
+  <div class="demo-top"><h2>Demo en vivo</h2><span class="status" id="dStatus">Conectando con la app…</span></div>
+  <form class="ask" id="dForm" autocomplete="off">
+    <input id="dQ" type="text" placeholder="Escribe una pregunta sobre los reglamentos del ITVS" aria-label="Pregunta">
+    <button id="dBtn" type="submit">Preguntar</button>
+  </form>
+  <div class="chips" id="dChips">
+    <button type="button">¿Cuánto cuesta un examen extraordinario?</button>
+    <button type="button">¿Cuánto es la multa por entregar tarde un libro?</button>
+    <button type="button">¿Puedo usar inteligencia artificial en mis tareas?</button>
+    <button type="button" class="out">¿Cuál es la capital de Francia?</button>
+    <button type="button" class="out">¿Cuánto gana el director del instituto?</button>
+  </div>
+  <div class="result">
+    <div id="dAnswer"><p class="placeholder">La respuesta aparece aquí, con sus citas y el tiempo de cada paso.</p></div>
+    <div id="dFrags"><p class="placeholder">Aquí aparecen los fragmentos que encontró la búsqueda, con su similitud. La rayita roja es el umbral.</p></div>
+  </div>
+</section>
+
+<section class="slide ink" data-part="Parte 3. Nuestra aplicación RAG" data-notes="Hicimos una prueba automática con 18 preguntas. En las 13 que sí están, revisamos que la respuesta trajera el dato exacto, no solo el documento. Las 5 que no están se abstuvieron: 3 por el umbral y 2 por el modelo.">
+  <h2>La prueba automática: 18 preguntas</h2>
+  <div class="big3">
+    <div><div class="n"><span style="color:var(--hl)">18</span>/18</div><div class="l">preguntas correctas en total</div></div>
+    <div><div class="n">13/13</div><div class="l">respuestas con el dato exacto: 70, $450, 20 %, 8 pesos, C-04…</div></div>
+    <div><div class="n">5/5</div><div class="l">abstenciones correctas: 3 por el umbral y 2 por la instrucción al modelo</div></div>
+  </div>
+  <p class="lead muted" style="margin-top:20px">Se corre con <code>npm run evaluar</code>. Un primer intento dio 18 de 18 revisando solo el documento, pero dos respuestas estaban mal; por eso ahora se revisa el dato.</p>
+</section>
+
+<!-- ===================== PARTE 4 ===================== -->
+<section class="slide paper qa" data-part="Parte 4. Conclusiones" data-notes="Primera pregunta de conclusiones. Regla práctica: RAG para lo que el modelo debe saber, fine-tuning para cómo debe responder.">
+  <p class="q">¿Cuándo conviene usar RAG en lugar de fine-tuning?</p>
+  <h2>Cuando el problema es de conocimiento, no de comportamiento</h2>
+  <div class="cols">
+    <div class="points" style="grid-template-columns:1fr">
+      <div><b>RAG</b>La información cambia seguido, hay que citar la fuente, es privada o son muchos documentos sin un dataset etiquetado.</div>
+    </div>
+    <div class="points" style="grid-template-columns:1fr">
+      <div><b>Fine-tuning</b>Se necesita un formato, estilo o tono muy específico, o una tarea repetitiva con un modelo más pequeño y barato.</div>
+    </div>
+  </div>
+  <p class="lead"><span class="mark">RAG para lo que el modelo debe saber; fine-tuning para cómo debe responder.</span> Se pueden combinar.</p>
+</section>
+
+<section class="slide paper qa" data-part="Parte 4. Conclusiones" data-notes="Segunda pregunta. Es lo que vimos en la demo: la pregunta se vuelve vector y se buscan los vectores más cercanos.">
+  <p class="q">¿Qué son los embeddings y cómo funciona una búsqueda semántica?</p>
+  <h2>Un embedding es un texto convertido en un vector de números</h2>
+  <p class="lead">El modelo está entrenado para que textos con significado parecido queden cerca, aunque usen otras palabras. La búsqueda semántica funciona así:</p>
+  <ol class="seq">
+    <li>Cada fragmento de los documentos se convierte en vector y se guarda en la base vectorial.</li>
+    <li>La pregunta se convierte en vector con el mismo modelo.</li>
+    <li>Se mide la similitud coseno contra cada vector: 1 es el mismo significado, 0 es ninguna relación.</li>
+    <li>Se devuelven los fragmentos más parecidos. Por eso “entregar tarde” encuentra “retraso en la devolución”.</li>
+  </ol>
+</section>
+
+<section class="slide ink qa" data-part="Parte 4. Conclusiones" data-notes="Tercera pregunta. Lo más importante: actualizar es reindexar, no reentrenar, y cada respuesta trae su fuente.">
+  <p class="q">¿Qué ventajas tiene RAG frente a entrenar de nuevo un modelo?</p>
+  <div class="points">
+    <div><b>Se actualiza en segundos</b>Basta reindexar el documento; reentrenar toma horas, días o meses.</div>
+    <div><b>Cuesta mucho menos</b>No necesita GPUs para entrenar ni un dataset etiquetado.</div>
+    <div><b>Cada respuesta trae su fuente</b>Se puede verificar de dónde salió cada dato.</div>
+    <div><b>Inventa menos</b>Responde con texto real y puede decir “no tengo información”.</div>
+    <div><b>Controla el acceso</b>Los datos no quedan grabados en el modelo; se pueden borrar o filtrar por usuario.</div>
+    <div><b>No depende del modelo</b>Se puede cambiar de LLM sin perder el conocimiento, y el modelo no olvida lo que ya sabía.</div>
+  </div>
+</section>
+
+<section class="slide yellow qa" data-part="Parte 4. Conclusiones" data-notes="Cuarta pregunta y cierre de la conclusión. Con fine-tuning habría que reentrenar todos los días. Con RAG solo se reindexa lo que cambió, y se puede automatizar cada noche.">
+  <p class="q" style="color:var(--text)">¿Qué técnica elegiríamos para una empresa cuya información cambia todos los días?</p>
+  <p class="statement">RAG, porque lo nuevo solo se reindexa: no hay que reentrenar nada.</p>
+  <p class="lead">Se puede reindexar cada noche o cada vez que cambia un documento, las respuestas citan la versión de la que salieron y un error se corrige editando el documento. Lo complementaríamos con instrucciones en el prompt y, si hay usuarios recurrentes, con memoria.</p>
+</section>
+
+<section class="slide ink cover" data-part="Cierre" data-notes="Abrir preguntas. Tener a la mano docs/EXPOSICION.md con las respuestas a las preguntas probables.">
+  <h1>Gracias</h1>
+  <p class="lead muted">¿Preguntas? Podemos hacer en vivo cualquier pregunta sobre los documentos.</p>
+</section>
+
+</div></div>
+
+<div class="hud" id="hud">
+  <button type="button" id="hPrev" aria-label="Diapositiva anterior">Anterior</button>
+  <span id="hCount">1 / 1</span>
+  <button type="button" id="hNext" aria-label="Diapositiva siguiente">Siguiente</button>
+  <button type="button" id="hDemo">Demo</button>
+  <button type="button" id="hNotes">Notas (N)</button>
+  <button type="button" id="hFull">Pantalla completa (F)</button>
+</div>
+<div class="notes-panel" id="notes" hidden></div>
+
+<script>
+(() => {
+  const deck = document.getElementById("deck");
+  const slides = Array.from(deck.querySelectorAll(".slide"));
+  const total = slides.length;
+  let cur = 0;
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  let conectado = false;
+
+  // Los controles se ocultan solos y reaparecen al mover el mouse
+  let idle;
+  const despertar = () => { document.body.classList.remove("idle"); clearTimeout(idle); idle = setTimeout(() => document.body.classList.add("idle"), 2500); };
+  document.addEventListener("mousemove", despertar);
+  despertar();
+
+  // Pie de página con la parte y el número
+  slides.forEach((s, i) => {
+    const f = document.createElement("div");
+    f.className = "foot";
+    f.innerHTML = `<span></span><span>${i + 1} / ${total}</span>`;
+    f.firstChild.textContent = s.dataset.part || "";
+    s.appendChild(f);
+  });
+
+  // Escalar el lienzo de 1920×1080 a la ventana
+  function fit() {
+    const k = Math.min(window.innerWidth / 1920, window.innerHeight / 1080);
+    deck.style.transform = `translate(-50%, -50%) scale(${k})`;
+  }
+  window.addEventListener("resize", fit);
+  fit();
+
+  function show(i) {
+    cur = Math.max(0, Math.min(total - 1, i));
+    slides.forEach((s, j) => s.classList.toggle("active", j === cur));
+    document.getElementById("hCount").textContent = `${cur + 1} / ${total}`;
+    if (location.hash !== "#" + (cur + 1)) history.replaceState(null, "", "#" + (cur + 1));
+    const n = document.getElementById("notes");
+    n.innerHTML = `<b>Notas, diapositiva ${cur + 1}:</b> `;
+    n.append(document.createTextNode(slides[cur].dataset.notes || "Sin notas."));
+    if (slides[cur].id === "demo") verificarConexion();
+  }
+  const desdeHash = () => { const n = parseInt(location.hash.slice(1), 10); return Number.isFinite(n) ? n - 1 : 0; };
+  show(desdeHash());
+  window.addEventListener("hashchange", () => { if (desdeHash() !== cur) show(desdeHash()); });
+
+  const enCampo = (el) => el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA");
+  document.addEventListener("keydown", (e) => {
+    if (enCampo(e.target)) { if (e.key === "Escape") e.target.blur(); return; }
+    if (["ArrowRight", "PageDown", " ", "ArrowDown"].includes(e.key)) { e.preventDefault(); show(cur + 1); }
+    else if (["ArrowLeft", "PageUp", "ArrowUp"].includes(e.key)) { e.preventDefault(); show(cur - 1); }
+    else if (e.key === "Home") show(0);
+    else if (e.key === "End") show(total - 1);
+    else if (e.key.toLowerCase() === "f") pantallaCompleta();
+    else if (e.key.toLowerCase() === "n") toggleNotas();
+    else if (e.key.toLowerCase() === "d") irADemo();
+  });
+  document.getElementById("hPrev").onclick = () => show(cur - 1);
+  document.getElementById("hNext").onclick = () => show(cur + 1);
+  document.getElementById("hNotes").onclick = toggleNotas;
+  document.getElementById("hFull").onclick = pantallaCompleta;
+  document.getElementById("hDemo").onclick = irADemo;
+  function irADemo() { show(slides.findIndex((s) => s.id === "demo")); setTimeout(() => document.getElementById("dQ").focus(), 50); }
+  function toggleNotas() { const n = document.getElementById("notes"); n.hidden = !n.hidden; }
+  function pantallaCompleta() {
+    if (document.fullscreenElement) document.exitFullscreen();
+    else document.documentElement.requestFullscreen?.().catch(() => {});
+  }
+
+  // ===================== Demo en vivo =====================
+
+  async function verificarConexion() {
+    if (conectado) return;
+    const st = $("dStatus");
+    try {
+      const r = await fetch("/api/info");
+      if (!r.ok) throw new Error();
+      const info = await r.json();
+      conectado = true;
+      st.className = "status ok";
+      st.textContent = `Conectado: ${info.llm}, ${info.fragmentos} fragmentos`;
+    } catch {
+      st.className = "status err";
+      st.textContent = "Sin conexión: inicia la app con npm start y abre localhost:3000/presentacion.html";
+    }
+  }
+
+  async function preguntar(texto) {
+    const pregunta = texto.trim();
+    if (!pregunta) return;
+    $("dQ").value = pregunta;
+    $("dBtn").disabled = true; $("dBtn").textContent = "Buscando…";
+    $("dAnswer").innerHTML = '<p class="placeholder">Buscando en los documentos…</p>';
+    $("dFrags").innerHTML = "";
+    try {
+      const res = await fetch("/api/preguntar", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pregunta }),
+      });
+      const r = await res.json().catch(() => ({ error: "La app respondió con un error." }));
+      if (!res.ok) throw new Error(r.error || "La app respondió con un error.");
+      pintar(r);
+    } catch (e) {
+      const msg = e instanceof TypeError
+        ? "No se pudo conectar con la app. Inicia la app con npm start y abre esta presentación desde http://localhost:3000/presentacion.html."
+        : e.message;
+      $("dAnswer").innerHTML = `<p class="why" style="color:var(--margin);font-size:28px">${esc(msg)}</p>`;
+    } finally {
+      $("dBtn").disabled = false; $("dBtn").textContent = "Preguntar";
+    }
+  }
+
+  function pintar(r) {
+    const texto = esc(r.respuesta)
+      .replace(/\*\*(.+?)\*\*/g, "<b>$1</b>")
+      .replace(/\[(\d+)\]/g, '<span class="cite">$1</span>');
+    const t = r.tiempos;
+    const pasan = r.candidatos.filter((c) => c.score >= r.parametros.minScore).length;
+    $("dAnswer").innerHTML = `
+      <span class="state ${r.sinInformacion ? "no" : ""}">${r.sinInformacion ? "Sin información suficiente" : "Respondida con los documentos"}</span>
+      <div class="answer">${texto}</div>
+      ${r.motivo ? `<p class="why">${esc(r.motivo)}</p>` : ""}
+      <div class="timing">
+        <div><small>Embedding</small><b>${t.embeddingMs} ms</b></div>
+        <div><small>Búsqueda</small><b>${t.busquedaMs} ms</b></div>
+        <div><small>Umbral ${r.parametros.minScore}</small><b>${pasan} de ${r.candidatos.length}</b></div>
+        <div><small>Modelo</small><b>${t.llmMs !== undefined ? (t.llmMs / 1000).toFixed(1) + " s" : "no se llamó"}</b></div>
+      </div>`;
+    const porId = Object.fromEntries((r.fuentes || []).map((f) => [f.id, f]));
+    $("dFrags").innerHTML = `<div class="frags">${r.candidatos.map((c) => {
+      const f = porId[c.id];
+      const on = c.score >= r.parametros.minScore;
+      return `<div class="frag ${on ? "" : "off"}">
+        <div class="top"><span><span class="src">${f ? "[" + f.n + "] " : ""}${esc(c.source)}</span> <span class="sec">${esc(c.section || "")}</span></span><span class="sc">${c.score.toFixed(3)}</span></div>
+        <div class="stroke"><b style="width:${Math.max(0, c.score) * 100}%"></b><u style="left:${r.parametros.minScore * 100}%"></u></div>
+        <div class="prev">${esc((f ? f.text : c.preview).replace(/\*\*/g, ""))}</div>
+      </div>`;
+    }).join("")}</div>`;
+  }
+
+  $("dForm").addEventListener("submit", (e) => { e.preventDefault(); preguntar($("dQ").value); });
+  $("dChips").querySelectorAll("button").forEach((b) => (b.onclick = () => preguntar(b.textContent)));
+})();
+</script>
+</body>
+</html>

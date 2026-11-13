@@ -1,0 +1,30 @@
+REGLAMENTO DE LA BIBLIOTECA "ING. ROSARIO MÉNDEZ" — ITVS
+(Documento ficticio creado para la demostración de la aplicación RAG.)
+
+HORARIOS
+
+La biblioteca abre de lunes a viernes de 7:00 a 21:00 horas y los sábados de 8:00 a 14:00 horas. Permanece cerrada domingos y días festivos oficiales. Durante la semana de exámenes finales el horario se extiende hasta las 23:00 horas de lunes a viernes.
+
+PRÉSTAMO DE LIBROS
+
+Para solicitar un préstamo es indispensable presentar la credencial vigente del ITVS. Los estudiantes de licenciatura pueden llevarse un máximo de 3 libros al mismo tiempo, por un periodo de 7 días naturales. Los estudiantes de posgrado y los docentes pueden llevarse hasta 5 libros por 14 días.
+
+El préstamo se puede renovar una sola vez, en línea o en el mostrador, siempre que nadie más haya reservado el libro.
+
+Los libros de la colección de reserva (marcados con etiqueta roja) solo se prestan para consulta dentro de la biblioteca.
+
+MULTAS
+
+Por cada día de retraso en la devolución se cobra una multa de 8 pesos por libro. Si un libro se pierde o se daña, el usuario debe reponerlo con un ejemplar nuevo de la misma edición o pagar su valor comercial más 100 pesos de gastos de procesamiento. Mientras un usuario tenga multas pendientes no podrá solicitar nuevos préstamos ni tramitar su constancia de no adeudo.
+
+CUBÍCULOS DE ESTUDIO
+
+La biblioteca cuenta con 12 cubículos de estudio grupal con capacidad para 6 personas. Se reservan desde el portal estudiantil por bloques de máximo 2 horas al día por grupo. Si el grupo no llega en los primeros 15 minutos, la reservación se libera.
+
+SALA DE CÓMPUTO Y RECURSOS DIGITALES
+
+En el segundo piso hay 40 computadoras con acceso a bases de datos científicas (IEEE Xplore, ScienceDirect y SpringerLink). Desde fuera del campus se puede acceder a estas bases de datos usando el correo institucional a través del proxy de la biblioteca.
+
+NORMAS DE CONVIVENCIA
+
+Se debe mantener silencio en las salas de lectura. No se permite introducir alimentos; las bebidas solo se permiten en envases con tapa. El uso de teléfonos celulares para llamadas está prohibido dentro de las salas.

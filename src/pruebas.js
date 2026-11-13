@@ -1,0 +1,21 @@
+// Preguntas de prueba: [pregunta, dato que debe aparecer (regex) | null si NO está en los documentos]
+export const PRUEBAS = [
+  ["¿Cuál es la calificación mínima para aprobar una materia?", /\b70\b/],
+  ["¿Cuántas faltas puedo tener en una asignatura?", /20\s?%/],
+  ["¿Cuánto cuesta un examen extraordinario?", /450/],
+  ["¿Qué promedio necesito para la beca de excelencia?", /\b92\b/],
+  ["¿Cuándo es la convocatoria de becas para agosto?", /15 de agosto/],
+  ["¿A qué hora abre la biblioteca los sábados?", /8:00/],
+  ["¿Cuánto es la multa por entregar tarde un libro?", /\b8 pesos/],
+  ["¿Cómo se llama la red wifi para alumnos?", /ITVS-Alumnos/],
+  ["¿Dónde está el centro de soporte técnico?", /C-04/],
+  ["¿Cuántas horas de servicio social debo hacer?", /480/],
+  ["¿Cuáles son las opciones de titulación?", /tesis/i],
+  ["¿Puedo usar inteligencia artificial en mis tareas?", /autori/i],
+  ["¿Qué pasa si me descubren copiando en un examen?", /calificación de 0|\b0\b|cero/i],
+  ["¿Cuál es la capital de Francia?", null],
+  ["¿Quién ganó el mundial de futbol de 2022?", null],
+  ["¿Cuál es la receta del pastel de chocolate?", null],
+  ["¿Cuánto gana el director del instituto?", null],
+  ["¿El instituto tiene alberca olímpica?", null],
+];
