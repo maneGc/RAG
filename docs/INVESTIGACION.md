@@ -1,8 +1,8 @@
 # Técnicas para ampliar el conocimiento de una Inteligencia Artificial
 
-**Práctica:** Técnicas para ampliar el conocimiento de una IA y aplicación RAG
-**Integrantes:** _(escribir nombres)_
-**Fecha:** _(escribir fecha)_
+- **Práctica:** Técnicas para ampliar el conocimiento de una IA y aplicación RAG
+- **Alumno:** Emmanuel Gutierrez
+- **Fecha:** Noviembre de 2026
 
 ---
 
